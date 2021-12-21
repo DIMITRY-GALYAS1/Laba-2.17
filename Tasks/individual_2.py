@@ -6,10 +6,21 @@ import json
 import click
 
 
-def add_student(students, name, group, progress, file_name):
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument('filename')
+@click.option("-n", "--name")
+@click.option("-g", "--group")
+@click.option("-p", "--progress")
+def add(filename, name, group, progress):
     """
     Добавление нового студента
     """
+    students = open_file(filename)
     students.append(
         {
             'name': name,
@@ -17,55 +28,32 @@ def add_student(students, name, group, progress, file_name):
             'progress': progress
         }
     )
-
-    with open(file_name, "w", encoding="utf-8") as file_out:
-        json.dump(students, file_out, ensure_ascii=False, indent=4)
-    return students
+    with open(filename, "w", encoding="utf-8") as out:
+        json.dump(students, out, ensure_ascii=False, indent=4)
 
 
-def display_students(line, students):
+@cli.command()
+@click.argument('filename')
+def select(filename):
     """
-    Вывод списка студентов
+    Выбор студента по успеваемости
     """
-    print(line)
-    print(
-        '| {:^4} | {:^30} | {:^20} | {:^15} |'.format(
-            "№",
-            "Ф.И.О..",
-            "Группа",
-            "Успеваемость"
-        )
+    students = open_file(filename)
+    line = '+-{}-+-{}-+-{}-+-{}-+'.format(
+        '-' * 4,
+        '-' * 30,
+        '-' * 20,
+        '-' * 15
     )
-    print(line)
-    # Вывести данные о всех студентах.
-    for idx, student in enumerate(students, 1):
-        print(
-            '| {:>4} | {:<30} | {:<20} | {:>15} |'.format(
-                idx,
-                student.get('name', ''),
-                student.get('group', ''),
-                student.get('progress', 0)
-            )
-        )
-    print(line)
-
-
-def select_students(line, undergraduates):
-    """
-    Выбор студентов
-    """
     print(line)
     print(
         '| {:^4} | {:^30} | {:^20} | {:^15} |'.format(
             "№",
             "Ф.И.О.",
             "Группа",
-            "Успеваемость"
-        )
-    )
+            "Успеваемость"))
     print(line)
-
-    for pupil in undergraduates:
+    for pupil in students:
         evaluations = pupil.get('progress')
         list_of_rating = list(evaluations)
         count = 0
@@ -83,32 +71,46 @@ def select_students(line, undergraduates):
     print(line)
 
 
-def opening(filename):
-    with open(filename, "r", encoding="utf-8") as f_in:
-        return json.load(f_in)
-
-
-@click.command()
-@click.option("-c", "--command")
+@cli.command()
 @click.argument('filename')
-@click.option("-n", "--name")
-@click.option("-g", "--group")
-@click.option("-p", "--progress")
-def main(command, filename, name, group, progress):
-    students = opening(filename)
+def display(filename):
+    """
+    Вывод списка студентов
+    """
+    students = open_file(filename)
     line = '+-{}-+-{}-+-{}-+-{}-+'.format(
         '-' * 4,
         '-' * 30,
         '-' * 20,
         '-' * 15
     )
-    if command == 'add':
-        add_student(students, name, group, progress, filename)
-        click.secho('Студент добавлен', fg='green')
-    elif command == 'display':
-        display_students(line, students)
-    elif command == 'select':
-        select_students(line, students)
+    print(line)
+    print(
+        '| {:^4} | {:^30} | {:^20} | {:^15} |'.format(
+            "№",
+            "Ф.И.О.",
+            "Группа",
+            "Успеваемость"))
+    print(line)
+    for i, pupil in enumerate(students, 1):
+        print(
+            '| {:<4} | {:<30} | {:<20} | {:<15} |'.format(
+                i,
+                pupil.get('name', ''),
+                pupil.get('group', ''),
+                pupil.get('progress', 0)
+            )
+        )
+    print(line)
+
+
+def open_file(filename):
+    with open(filename, "r", encoding="utf-8") as fin:
+        return json.load(fin)
+
+
+def main():
+    cli()
 
 
 if __name__ == '__main__':
